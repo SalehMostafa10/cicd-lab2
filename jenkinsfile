@@ -1,0 +1,86 @@
+pipeline {
+    agent any
+
+    tools {
+        maven 'M3'
+    }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+    }
+
+    stages {
+        stage('Source Retrieval') {
+            steps {
+                echo "Initializing source synchronization..."
+                checkout scm
+            }
+        }
+
+        stage('Initialize Workspace') {
+            steps {
+                echo "Executing project cleanup cycle..."
+                sh 'mvn clean -q'
+            }
+        }
+
+        stage('Execute Test Suite') {
+            steps {
+                echo "Triggering automated validation procedures..."
+                sh 'mvn test -q'
+            }
+            post {
+                always {
+                    junit 'target/surefire-reports/*.xml'
+                }
+            }
+        }
+
+        stage('Build Artifact') {
+            steps {
+                echo "Generating compiled deliverables..."
+                sh 'mvn package -q -DskipTests'
+            }
+        }
+
+        stage('Deploy to Local Repo') {
+            steps {
+                echo "Publishing binaries to local repository..."
+                sh 'mvn install -q -DskipTests'
+            }
+        }
+
+        stage('Store Build Output') {
+            steps {
+                echo "Transferring build assets to archive..."
+                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "Performing post-execution maintenance..."
+            cleanWs()
+
+            script {
+                if (fileExists('target/surefire-reports')) {
+                    archiveArtifacts artifacts: 'target/surefire-reports/**/*', fingerprint: false
+                }
+            }
+        }
+
+        success {
+            echo "Pipeline completed with a successful outcome."
+        }
+
+        failure {
+            echo "Pipeline execution encountered critical errors."
+        }
+
+        unstable {
+            echo "Pipeline concluded with integrity warnings."
+        }
+    }
+}
