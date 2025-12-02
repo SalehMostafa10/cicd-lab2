@@ -1,34 +1,3 @@
-node {
+@Library('my-shared-lib') _
 
-    // Keep last 10 builds
-    properties([
-        buildDiscarder(logRotator(numToKeepStr: '10'))
-    ])
-
-    timeout(time: 30, unit: 'MINUTES') {
-
-        try {
-
-            stage('Source Retrieval') {
-                echo "Initializing source synchronization..."
-                checkout scm
-            }
-
-            stage('Initialize Workspace') {
-                echo "Executing project cleanup cycle..."
-                sh 'mvn clean -q'
-            }
-
-            stage('Execute Test Suite') {
-                echo "Triggering automated validation procedures..."
-                sh 'mvn test -q'
-            }
-
-        } finally {
-            stage('Post Actions') {
-                junit 'target/surefire-reports/*.xml'
-            }
-        }
-
-    } // end timeout
-}
+myPipeline(timeoutMinutes: 20)
