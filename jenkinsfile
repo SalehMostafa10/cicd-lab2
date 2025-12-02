@@ -1,36 +1,33 @@
-pipeline {
-    agent any
-
-    options {
-        timeout(time: 30, unit: 'MINUTES')
+node {
+    
+    // ----- Options -----
+    timeout(time: 30, unit: 'MINUTES')
+    
+    // Keep last 10 builds
+    properties([
         buildDiscarder(logRotator(numToKeepStr: '10'))
-    }
+    ])
 
-    stages {
+    try {
+
         stage('Source Retrieval') {
-            steps {
-                echo "Initializing source synchronization..."
-                checkout scm
-            }
+            echo "Initializing source synchronization..."
+            checkout scm
         }
 
         stage('Initialize Workspace') {
-            steps {
-                echo "Executing project cleanup cycle..."
-                sh 'mvn clean -q'
-            }
+            echo "Executing project cleanup cycle..."
+            sh 'mvn clean -q'
         }
 
         stage('Execute Test Suite') {
-            steps {
-                echo "Triggering automated validation procedures..."
-                sh 'mvn test -q'
-            }
-            post {
-                always {
-                    junit 'target/surefire-reports/*.xml'
-                }
-            }
+            echo "Triggering automated validation procedures..."
+            sh 'mvn test -q'
+        }
+
+    } finally {
+        stage('Post Actions') {
+            junit 'target/surefire-reports/*.xml'
         }
     }
 }
