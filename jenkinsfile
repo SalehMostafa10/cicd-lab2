@@ -1,3 +1,3 @@
-@Library('my-shared-lib') _
+@Library('Shared-Library') _
 
 myPipeline(timeoutMinutes: 20)
